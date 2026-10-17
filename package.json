@@ -1,0 +1,9 @@
+{
+  "name": "pacemaker",
+  "private": true,
+  "type": "module",
+  "description": "The agent's clock: circadian workflow_dispatch pinger for zero-poc (Cloudflare Worker PoC)",
+  "scripts": {
+    "test": "node test/simulate.js"
+  }
+}

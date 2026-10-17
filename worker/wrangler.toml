@@ -1,0 +1,40 @@
+# pacemaker — the agent's clock.
+# Deploy steps: ../README.md (login -> kv namespace create -> secret put -> deploy)
+
+name = "pacemaker"
+main = "src.js"
+compatibility_date = "2026-10-01"
+
+# ---------------------------------------------------------------------------
+# Circadian schedule (all times UTC) — design: ../docs/schedule.md
+#
+# VERIFIED QUIRK: Cloudflare day-of-week is 1-7 with SUNDAY=1 (Quartz-style),
+# NOT Unix's 0-6 (Sunday=0). The intuitive `*/15 8-23 * * 1-5` would fire
+# Sun-Thu, not Mon-Fri. Cloudflare's own docs recommend day names to avoid
+# exactly this — so we use MON-FRI. Minute/hour fields are standard
+# (`*/15` steps and `8-23` ranges behave exactly like Unix cron).
+# Free plan allows 5 cron triggers per account; we ship 2 (a 3rd is optional).
+# Note: cron trigger changes can take up to ~15 minutes to propagate.
+# ---------------------------------------------------------------------------
+[triggers]
+crons = [
+  "*/15 8-23 * * MON-FRI", # weekday wake window: 08:00-23:45, every 15 min (64 beats/day)
+  "17 2 * * *",            # daily sleep/consolidation dispatch at 02:17
+  # Optional weekend reduced cadence (hourly 10:00-20:00) — recommended in
+  # docs/schedule.md, off by default. Uncomment to enable:
+  # "0 10-20 * * SAT,SUN",
+]
+
+[vars]
+REPO = "SuperInstance/zero-poc" # dispatch target (owner/name)
+# REPO_REF = "main"            # optional; defaults to "main"
+
+# KV — create the namespace and paste its id here:
+#   wrangler kv namespace create BINDING_KV
+[[kv_namespaces]]
+binding = "BINDING_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# Secrets — set via CLI, never committed:
+#   wrangler secret put GH_PAT      # fine-grained PAT: repo zero-poc only, Actions: Read and write
+#   wrangler secret put TICK_SECRET # optional shared secret for POST /tick
